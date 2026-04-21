@@ -1,145 +1,161 @@
 # sistema_de_pedidos
 
-## Planejamento do banco de dados MySQL
+## Visao geral
 
-Este projeto pode começar com um banco de dados simples, mas bem organizado. A ideia e separar o sistema em tabelas que representam:
+Este projeto agora usa um modelo de banco mais proximo do mercado. Em vez de guardar um unico produto direto na tabela de pedidos, o sistema separa:
 
 - quem compra
-- o que e vendido
-- o pedido realizado
-- os itens que fazem parte de cada pedido
+- onde sera feita a entrega
+- quais produtos existem
+- qual pedido foi criado
+- quais itens fazem parte de cada pedido
+- como o pagamento foi registrado
 
-## Tabelas necessarias
+Essa separacao deixa o banco mais organizado e permite que um pedido tenha varios produtos.
 
-### 1. `clientes`
+## Tabelas principais
 
-Guarda os dados do cliente que faz o pedido.
+### `usuarios`
 
-Campos sugeridos:
+Guarda os dados do cliente.
 
-- `id` - identificador unico do cliente
-- `nome` - nome do cliente
-- `telefone` - telefone para contato
-- `email` - email do cliente
-- `endereco` - endereco para entrega
+Campos principais:
 
-### 2. `produtos`
+- `id`
+- `nome`
+- `email`
+- `telefone`
+- `ativo`
+
+### `enderecos`
+
+Guarda um ou mais enderecos para cada usuario.
+
+Campos principais:
+
+- `id`
+- `usuario_id`
+- `apelido`
+- `cep`
+- `logradouro`
+- `numero`
+- `bairro`
+- `cidade`
+- `estado`
+- `principal`
+
+### `categorias`
+
+Organiza os produtos por tipo.
+
+Campos principais:
+
+- `id`
+- `nome`
+
+### `produtos`
 
 Guarda os produtos vendidos pelo sistema.
 
-Campos sugeridos:
+Campos principais:
 
-- `id` - identificador unico do produto
-- `nome` - nome do produto
-- `descricao` - descricao curta
-- `preco` - preco atual do produto
-- `estoque` - quantidade disponivel
+- `id`
+- `categoria_id`
+- `nome`
+- `descricao`
+- `preco`
+- `estoque`
+- `ativo`
 
-### 3. `pedidos`
+### `pedidos`
 
-Guarda as informacoes principais de cada pedido.
+Guarda os dados gerais do pedido.
 
-Campos sugeridos:
+Campos principais:
 
-- `id` - identificador unico do pedido
-- `cliente_id` - cliente que fez o pedido
-- `data_pedido` - data e hora do pedido
-- `status` - situacao do pedido, como `pendente`, `pago` ou `entregue`
-- `valor_total` - valor final do pedido
+- `id`
+- `usuario_id`
+- `endereco_id`
+- `data_pedido`
+- `status`
+- `valor_total`
+- `observacoes`
 
-### 4. `itens_pedido`
+### `itens_pedido`
 
-Guarda os produtos que pertencem a cada pedido.
+Guarda os produtos de cada pedido.
 
-Campos sugeridos:
+Campos principais:
 
-- `id` - identificador unico do item
-- `pedido_id` - pedido ao qual o item pertence
-- `produto_id` - produto escolhido
-- `quantidade` - quantidade comprada
-- `preco_unitario` - preco do produto no momento da compra
-- `subtotal` - resultado de `quantidade x preco_unitario`
+- `id`
+- `pedido_id`
+- `produto_id`
+- `quantidade`
+- `preco_unitario`
+- `subtotal`
+
+### `pagamentos`
+
+Guarda como o pedido foi pago.
+
+Campos principais:
+
+- `id`
+- `pedido_id`
+- `forma_pagamento`
+- `status`
+- `valor`
+- `transacao_codigo`
+- `data_pagamento`
 
 ## Relacionamentos
 
-Os relacionamentos ficam assim:
-
-- Um `cliente` pode ter varios `pedidos`
-- Um `pedido` pertence a apenas um `cliente`
+- Um `usuario` pode ter varios `enderecos`
+- Um `usuario` pode ter varios `pedidos`
+- Um `pedido` pertence a um `usuario`
 - Um `pedido` pode ter varios `itens_pedido`
-- Um `item_pedido` pertence a apenas um `pedido`
+- Um `item_pedido` pertence a um `pedido`
 - Um `produto` pode aparecer em varios `itens_pedido`
-- Um `item_pedido` usa apenas um `produto`
+- Um `pedido` pode ter um `pagamento`
+- Uma `categoria` pode ter varios `produtos`
 
 Forma simples de visualizar:
 
 ```text
-clientes -> pedidos -> itens_pedido <- produtos
+usuarios -> enderecos
+usuarios -> pedidos -> itens_pedido <- produtos <- categorias
+pedidos -> pagamentos
 ```
 
-## Explicacao simples
+## Ordem de criacao
 
-A tabela `pedidos` nao guarda diretamente todos os produtos comprados. Isso acontece porque um pedido pode ter varios produtos, e um mesmo produto pode aparecer em muitos pedidos diferentes.
+1. `usuarios`
+2. `enderecos`
+3. `categorias`
+4. `produtos`
+5. `pedidos`
+6. `itens_pedido`
+7. `pagamentos`
 
-Por isso existe a tabela `itens_pedido`. Ela funciona como uma ponte entre `pedidos` e `produtos`.
+Essa ordem e importante porque as chaves estrangeiras dependem de tabelas criadas antes.
 
-Pensando de forma pratica:
+## Arquivos do projeto
 
-- `clientes` = quem compra
-- `produtos` = o que a loja vende
-- `pedidos` = a compra feita
-- `itens_pedido` = os produtos dentro da compra
+- `schema.sql`: cria o banco e as tabelas
+- `seeds.sql`: insere dados de exemplo
+- `queries.sql`: consultas para estudo e relatorios basicos
 
-## Ordem de criacao no MySQL
+## Fluxo de uso
 
-A ordem correta e importante por causa das chaves estrangeiras.
+1. Execute `schema.sql`
+2. Execute `seeds.sql`
+3. Execute `queries.sql`
 
-1. Criar `clientes`
-2. Criar `produtos`
-3. Criar `pedidos`
-4. Criar `itens_pedido`
+## Melhorias reais que este modelo traz
 
-## Por que essa ordem?
-
-- `pedidos` precisa de `clientes`, porque usa `cliente_id`
-- `itens_pedido` precisa de `pedidos` e `produtos`, porque usa `pedido_id` e `produto_id`
-
-## Exemplo SQL
-
-```sql
-CREATE TABLE clientes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    telefone VARCHAR(20),
-    email VARCHAR(100),
-    endereco VARCHAR(200)
-);
-
-CREATE TABLE produtos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    descricao VARCHAR(200),
-    preco DECIMAL(10,2) NOT NULL,
-    estoque INT NOT NULL DEFAULT 0
-);
-
-CREATE TABLE pedidos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    cliente_id INT NOT NULL,
-    data_pedido DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    status VARCHAR(30) NOT NULL DEFAULT 'pendente',
-    valor_total DECIMAL(10,2) NOT NULL DEFAULT 0,
-    FOREIGN KEY (cliente_id) REFERENCES clientes(id)
-);
-
-CREATE TABLE itens_pedido (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    pedido_id INT NOT NULL,
-    produto_id INT NOT NULL,
-    quantidade INT NOT NULL,
-    preco_unitario DECIMAL(10,2) NOT NULL,
-    subtotal DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (pedido_id) REFERENCES pedidos(id),
-    FOREIGN KEY (produto_id) REFERENCES produtos(id)
-);
-```
+- Um pedido pode ter varios produtos
+- O preco fica salvo no item do pedido, mesmo se o produto mudar depois
+- O endereco fica separado do usuario
+- O pagamento tem status proprio
+- Os produtos podem ser agrupados por categoria
+- O banco ja nasce mais preparado para relatorios
