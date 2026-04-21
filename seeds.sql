@@ -1,5 +1,18 @@
 USE sistema_pedidos;
 
+-- Limpa os dados para permitir reexecucao do arquivo sem erros de duplicidade
+SET FOREIGN_KEY_CHECKS = 0;
+
+TRUNCATE TABLE pagamentos;
+TRUNCATE TABLE itens_pedido;
+TRUNCATE TABLE pedidos;
+TRUNCATE TABLE produtos;
+TRUNCATE TABLE categorias;
+TRUNCATE TABLE enderecos;
+TRUNCATE TABLE usuarios;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
 INSERT INTO usuarios (nome, email, telefone) VALUES
     ('Ana Souza', 'ana.souza@gmail.com', '(65) 99911-1001'),
     ('Bruno Lima', 'bruno.lima@yahoo.com', '(65) 99911-1002'),
